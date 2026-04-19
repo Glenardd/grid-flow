@@ -1,0 +1,15 @@
+.mainCanvas {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.palettes{
+    height: 50px;
+    width: 50px;
+}
+
+.palettes:hover{
+    cursor: pointer;
+}
