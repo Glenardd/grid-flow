@@ -42,11 +42,13 @@ function App() {
       if (clickedNode === textref.current) return;
 
       setTextPosition({ x: mousePos?.x || 0, y: mousePos?.y || 0 });
+      setEditMode(false);
     };
 
     // prevents showing the context menu
     const handlerContextMenu = (e: KonvaEventObject<PointerEvent>) => {
       e.evt.preventDefault();
+      setEditMode(false);
     };
 
     stage.on("contextmenu", handlerContextMenu); // rightClicking
