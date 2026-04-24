@@ -5,11 +5,17 @@
     height: 100vh;
 }
 
-.palettes{
+.palettes {
     height: 50px;
     width: 50px;
 }
 
-.palettes:hover{
+.palettes:hover {
     cursor: pointer;
+}
+
+.color-selection {
+    position:fixed; 
+    top: 15px;
+    left: 15px;
 }
