@@ -49,7 +49,7 @@ function App() {
   };
 
   // prevents showing the context menu
-  const handlerContextMenu = (e: KonvaEventObject<PointerEvent>) => {
+  const handlerRightClick = (e: KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
     setEditMode(false);
   };
@@ -90,7 +90,7 @@ function App() {
   // event clicks
   useEffect(() => {
     const stage = canvasRef.current;
-    stage.on("contextmenu", handlerContextMenu); // rightClicking
+    stage.on("contextmenu", handlerRightClick); // rightClicking
     stage.on("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e)); // left clicking 
 
     // clicking the text
