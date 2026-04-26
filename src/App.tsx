@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Layer, Rect, Stage, Text } from 'react-konva';
 import "./app.css";
-import { textArea } from "./textArea";
 import type Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { Html } from 'react-konva-utils';
@@ -30,39 +29,34 @@ function App() {
 
     const canvas = stage.container();
     canvas.style.background = bgColor === "" ? "white" : bgColor;
+  };
 
-    // text position set
-    const handlerLeftClick = (e: KonvaEventObject<PointerEvent>) => {
-      e.evt.preventDefault();
+  // text position set
+  const handlerLeftClick = (e: KonvaEventObject<PointerEvent>) => {
+    e.evt.preventDefault();
 
-      const mousePos = stage.getPointerPosition();
+    const stage = canvasRef.current;
+    if (!stage) return;
 
-      // when text is clicked dont allow it to move around
-      const clickedNode = e.target;
-      if (clickedNode === textref.current) return;
+    const mousePos = stage.getPointerPosition();
 
-      setTextPosition({ x: mousePos?.x || 0, y: mousePos?.y || 0 });
-      setEditMode(false);
-    };
+    // when text is clicked dont allow it to move around
+    const clickedNode = e.target;
+    if (clickedNode === textref.current) return;
 
-    // prevents showing the context menu
-    const handlerContextMenu = (e: KonvaEventObject<PointerEvent>) => {
-      e.evt.preventDefault();
-      setEditMode(false);
-    };
+    setTextPosition({ x: mousePos?.x || 0, y: mousePos?.y || 0 });
+    setEditMode(false);
+  };
 
-    stage.on("contextmenu", handlerContextMenu); // rightClicking
-    stage.on("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e)); // left clicking 
-
-    // cleanup function for the mouse event
-    return () => {
-      stage.off("contextmenu", handlerLeftClick);
-      stage.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
-    };
+  // prevents showing the context menu
+  const handlerContextMenu = (e: KonvaEventObject<PointerEvent>) => {
+    e.evt.preventDefault();
+    setEditMode(false);
   };
 
   const saveToJpeg = () => {
     const stage = canvasRef.current;
+    if (!stage) return;
 
     // hide the transparent layer visual
     uiLayerRef.current?.hide();
@@ -88,8 +82,16 @@ function App() {
     return setBgColor("");
   };
 
+  //color change
   useEffect(() => {
     setupCanvas();
+  }, [bgColor]);
+
+  // event clicks
+  useEffect(() => {
+    const stage = canvasRef.current;
+    stage.on("contextmenu", handlerContextMenu); // rightClicking
+    stage.on("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e)); // left clicking 
 
     // clicking the text
     textref.current?.on('click', () => {
@@ -97,7 +99,12 @@ function App() {
       console.log("edit mode enabled");
     });
 
-  }, [bgColor]);
+    //clean
+    return () => {
+      stage.off("contextmenu", handlerLeftClick);
+      stage.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
+    };
+  }, [])
 
   return (
     <div>
@@ -128,22 +135,21 @@ function App() {
             />
 
             {// editing text
-            editMode && (
-              <Html>
-                <input
-                  placeholder="DOM input from Konva nodes"
-                  style={{
-                    position: "absolute",
-                    top: `${textPosition.y || textref.current?.y()}px`,
-                    left: `${textPosition.x || textref.current?.x()}px`,
-                    fontSize: "24px",
-                  }}
-                  onBlur={() => setEditMode(false)} // exit edit mode when input loses focus
-                  onChange={(e) => setText(e.target.value)} // update text state on input change
-                  value={text} // set input value to current text state
-                />
-              </Html>)}
-
+              editMode && (
+                <Html>
+                  <input
+                    placeholder="DOM input from Konva nodes"
+                    style={{
+                      position: "absolute",
+                      top: `${textPosition.y || textref.current?.y()}px`,
+                      left: `${textPosition.x || textref.current?.x()}px`,
+                      fontSize: "24px",
+                    }}
+                    onBlur={() => setEditMode(false)} // exit edit mode when input loses focus
+                    onChange={(e) => setText(e.target.value)} // update text state on input change
+                    value={text} // set input value to current text state
+                  />
+                </Html>)}
           </Layer>
         </Stage>
       </div>
@@ -156,8 +162,7 @@ function App() {
       <div>
         <button type="button" style={{ position: "fixed", top: 250, left: 15 }} onClick={() => saveToJpeg()}>export to png</button>
         <button type="button" style={{ position: "fixed", top: 300, left: 15 }} onClick={() => removeBgColor()}>remove bg color</button>
-        <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => textArea("nice", setText)}>Test text area</button>
-        <button type="button" style={{ position: "fixed", top: 400, left: 15 }} onClick={() => setText("")}>reset text</button>
+        <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setText("")}>reset text</button>
       </div>
     </div>
   );
