@@ -21,6 +21,7 @@ function App() {
   const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
   const [text, setText] = useState<string | undefined>("");
   const [editMode, setEditMode] = useState(false);
+  const [scale, setScale] = useState(1);
 
   // initial canvas
   const setupCanvas = () => {
@@ -52,6 +53,19 @@ function App() {
   const handlerRightClick = (e: KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
     setEditMode(false);
+  };
+
+  //zoom in
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev * 1.05, 3));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev * 0.95, 0.5));
+  };
+
+  const resetScale = () => {
+    setScale(1);
   };
 
   const saveToJpeg = () => {
@@ -106,10 +120,15 @@ function App() {
     };
   }, [])
 
+  // current scale
+  useEffect(() => {
+    console.log("current scale", Math.floor(scale * 100));
+  }, [scale])
+
   return (
     <div>
       <div ref={containerRef} className="mainCanvas">
-        <Stage ref={canvasRef} width={canvasWidth} height={canvasHeight} >
+        <Stage ref={canvasRef} width={canvasWidth * scale} height={canvasHeight * scale} scaleX={scale} scaleY={scale} >
           <Layer ref={uiLayerRef}>
             {
               // for identifying transparent bg
@@ -117,13 +136,7 @@ function App() {
             }
           </Layer>
           <Layer>
-            <Rect
-              x={0}
-              y={0}
-              width={canvasWidth}
-              height={canvasHeight}
-              fill={bgColor || bgColor}
-            />
+            {/* main canvas */}
             <Text
               ref={textref}
               x={textPosition.x || 50}
@@ -133,7 +146,6 @@ function App() {
               text={text || "hello world"}
               fill="black"
             />
-
             {// editing text
               editMode && (
                 <Html>
@@ -162,6 +174,11 @@ function App() {
       <div>
         <button type="button" style={{ position: "fixed", top: 250, left: 15 }} onClick={() => saveToJpeg()}>export to png</button>
         <button type="button" style={{ position: "fixed", top: 300, left: 15 }} onClick={() => removeBgColor()}>remove bg color</button>
+
+        <button type="button" style={{ position: "fixed", top: 400, left: 15 }} onClick={() => zoomIn()}>+</button>
+        <button type="button" style={{ position: "fixed", top: 450, left: 15 }} onClick={() => zoomOut()}>-</button>
+        <button type="button" style={{ position: "fixed", top: 500, left: 15 }} onClick={() => resetScale()}>reset scale</button>
+
         <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setText("")}>reset text</button>
       </div>
     </div>
