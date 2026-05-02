@@ -1,9 +1,9 @@
 # 🎨 Grid Flow
 A dedicated web application for image editing and layout design.
 
-## 🚀 Current Status: Sprint 1
+## 🚀 Current Status: Sprint 2
 **Status:** Completed ✅  
-**Goal:** Establish a type-safe rendering environment using React-Konva.
+**Goal:** A canvas with interactive capabilities, including zooming, object manipulation, responsive canvas sizing, and text styling customization.
 
 ## 🛠 Tech Stack
 - **Framework:** [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/)
@@ -12,10 +12,10 @@ A dedicated web application for image editing and layout design.
 - **State Management:** React Hooks (`useState` / `useRef`)
 
 ## 📦 Features Built
-- [x] **Project Scaffold:** Optimized Vite + TypeScript development environment.
-- [x] **Konva Stage:** Implementation of core canvas rendering.
-- [x] **Type Safety:** Established robust Interfaces for canvas elements (Text).
-- [x] **Background Color Change:** Functional reactive canvas background customization.
+- [x] **Canvas Scaling (Zoom):** Basic zoom in/out functionality implemented.
+- [x] **Drag & Drop:** Interactive repositioning of canvas objects.
+- [x] **Canvas Resizing:** Dynamic width/height input for custom canvas sizing.
+- [x] **Basic Object Responsiveness:** Object position is responsive as the canvas resizes.
 
 ## 🛠 Setup & Development
 1. **Clone the repository.**
