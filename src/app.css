@@ -15,7 +15,21 @@
 }
 
 .color-selection {
-    position:fixed; 
+    position: fixed;
     top: 15px;
     left: 15px;
+}
+
+.inputs {
+    position: fixed;
+    bottom: 10px;
+
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.inputs-container {
+    display: flex;
+    align-items: center;
 }
