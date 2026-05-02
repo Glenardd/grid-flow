@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Layer, Rect, Stage, Text } from 'react-konva';
 import "./app.css";
-import type Konva from "konva";
+import Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { Html } from 'react-konva-utils';
 
 function App() {
 
-  // canvas size
+  // canvas size, default size
   const canvasWidth = 700;
   const canvasHeight = 700;
 
@@ -16,9 +16,15 @@ function App() {
   const uiLayerRef = useRef<Konva.Layer | null>(null);
   const textref = useRef<Konva.Text | null>(null);
 
+  const [width, setWidth] = useState("");
+  const [height, setHeight] = useState("");
+  const [canvasSize, setCanvasSize] = useState<{ width: number, height: number }>({ width: canvasWidth, height: canvasHeight });
   const [bgColor, setBgColor] = useState('');
   const colors = ['white', 'red', 'green', 'blue'];
-  const [textPosition, setTextPosition] = useState({ x: 0, y: 0 });
+  const [textPosition, setTextPosition] = useState<{ x: number, y: number }>({
+    x: 0.5,   // start centered in pixels
+    y: 0.5,
+  });
   const [text, setText] = useState<string | undefined>("");
   const [editMode, setEditMode] = useState(false);
   const [scale, setScale] = useState(1);
@@ -39,13 +45,9 @@ function App() {
     const stage = canvasRef.current;
     if (!stage) return;
 
-    const mousePos = stage.getPointerPosition();
-
-    // when text is clicked dont allow it to move around
+    // when text is clicked dont allow it to move around and cancel edit mode
     const clickedNode = e.target;
     if (clickedNode === textref.current) return;
-
-    setTextPosition({ x: mousePos?.x || 0, y: mousePos?.y || 0 });
     setEditMode(false);
   };
 
@@ -96,6 +98,13 @@ function App() {
     return setBgColor("");
   };
 
+  // handles canvas size changes
+  const handleSizeSubmit = () => {
+    console.log("width: ", canvasSize.width);
+    console.log("height: ", canvasSize.height);
+    setCanvasSize({ width: Number(width), height: Number(height) });
+  };
+
   //color change
   useEffect(() => {
     setupCanvas();
@@ -107,81 +116,111 @@ function App() {
     stage.on("contextmenu", handlerRightClick); // rightClicking
     stage.on("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e)); // left clicking 
 
-    // clicking the text
-    textref.current?.on('click', () => {
-      setEditMode(true);
-      console.log("edit mode enabled");
-    });
-
     //clean
     return () => {
       stage.off("contextmenu", handlerLeftClick);
       stage.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
     };
-  }, [])
+  }, []);
 
-  // current scale
+  // pixel ratio pisutu
+  const pos = {
+    x: textPosition.x * canvasSize.width,
+    y: textPosition.y * canvasSize.height,
+  };
+
   useEffect(() => {
-    console.log("current scale", Math.floor(scale * 100));
-  }, [scale])
+    if (!textref.current) return;
+    textref.current.on('click', () => setEditMode(true));
+    return () => {
+      textref.current?.off('click');
+    };
+  }, [textPosition]); // runs after textPosition is set and Text renders
 
   return (
-    <div>
-      <div ref={containerRef} className="mainCanvas">
-        <Stage ref={canvasRef} width={canvasWidth * scale} height={canvasHeight * scale} scaleX={scale} scaleY={scale} >
-          <Layer ref={uiLayerRef}>
-            {
-              // for identifying transparent bg
-              bgColor === "" ? <Text x={0} y={0} text="transparent background" /> : ""
-            }
-          </Layer>
-          <Layer>
-            {/* main canvas */}
-            <Text
-              ref={textref}
-              x={textPosition.x || 50}
-              y={textPosition.y || 50}
-              fontFamily="Calibri"
-              fontSize={24}
-              text={text || "hello world"}
-              fill="black"
-            />
-            {// editing text
-              editMode && (
-                <Html>
-                  <input
-                    placeholder="DOM input from Konva nodes"
-                    style={{
-                      position: "absolute",
-                      top: `${textPosition.y || textref.current?.y()}px`,
-                      left: `${textPosition.x || textref.current?.x()}px`,
-                      fontSize: "24px",
-                    }}
-                    onBlur={() => setEditMode(false)} // exit edit mode when input loses focus
-                    onChange={(e) => setText(e.target.value)} // update text state on input change
-                    value={text} // set input value to current text state
-                  />
-                </Html>)}
-          </Layer>
-        </Stage>
-      </div>
-      <div className="color-selection">
-        {colors.map((color, index) => {
-          // basic color selection
-          return (<div key={index} className="palettes" style={{ backgroundColor: `${color}` }} onClick={() => setBgColor(color)} />)
-        })}
-      </div>
+    <>
       <div>
-        <button type="button" style={{ position: "fixed", top: 250, left: 15 }} onClick={() => saveToJpeg()}>export to png</button>
-        <button type="button" style={{ position: "fixed", top: 300, left: 15 }} onClick={() => removeBgColor()}>remove bg color</button>
+        <div ref={containerRef} className="mainCanvas">
+          <Stage ref={canvasRef} width={canvasSize.width * scale} height={canvasSize.height * scale} scaleX={scale} scaleY={scale} >
+            <Layer ref={uiLayerRef}>
+              {
+                // for identifying transparent bg
+                bgColor === "" ? <Text x={0} y={0} text="transparent background" /> : ""
+              }
+            </Layer>
+            <Layer>
+              {/* canvas background color */}
+              <Rect
+                x={0}
+                y={0}
+                width={canvasSize.width}
+                height={canvasSize.height}
+                fill={bgColor || bgColor}
+              />
+              {/* Text */}
+              <Text
+                ref={textref}
+                x={pos.x}
+                y={pos.y}
+                align="center"
+                verticalAlign="middle"
+                fontFamily="Calibri"
+                fontSize={24}
+                text={text || "hello world"}
+                fill="black"
+                draggable // enable draggable object
+                onMouseEnter={() => { document.body.style.cursor = 'pointer'; }}
+                onMouseLeave={() => { document.body.style.cursor = 'default'; }}
+                onDragEnd={(e: KonvaEventObject<DragEvent>) => {
+                  setTextPosition({
+                    x: e.target.x() / canvasSize.width,
+                    y: e.target.y() / canvasSize.height,
+                  });
+                }}
+              />
+              {// editing text
+                editMode && (
+                  <Html>
+                    <input
+                      style={{
+                        position: "absolute",
+                        top: `${pos.y || textref.current?.y()}px`,
+                        left: `${pos.x || textref.current?.x()}px`,
+                        fontSize: `${24}px`,
+                      }}
+                      onBlur={() => setEditMode(false)} // exit edit mode when input loses focus
+                      onChange={(e) => setText(e.target.value)} // update text state on input change
+                      value={text || "hello world"} // set input value to current text state
+                    />
+                  </Html>)}
+            </Layer>
+          </Stage>
+        </div>
+        <div className="color-selection">
+          {colors.map((color, index) => {
+            // basic color selection
+            return (<div key={index} className="palettes" style={{ backgroundColor: `${color}` }} onClick={() => setBgColor(color)} />)
+          })}
+        </div>
+        <div>
+          <button type="button" style={{ position: "fixed", top: 250, left: 15 }} onClick={() => saveToJpeg()}>export to png</button>
+          <button type="button" style={{ position: "fixed", top: 300, left: 15 }} onClick={() => removeBgColor()}>remove bg color</button>
 
-        <button type="button" style={{ position: "fixed", top: 400, left: 15 }} onClick={() => zoomIn()}>+</button>
-        <button type="button" style={{ position: "fixed", top: 450, left: 15 }} onClick={() => zoomOut()}>-</button>
-        <button type="button" style={{ position: "fixed", top: 500, left: 15 }} onClick={() => resetScale()}>reset scale</button>
+          <button type="button" style={{ position: "fixed", top: 400, left: 15 }} onClick={() => zoomIn()}>+</button>
+          <button type="button" style={{ position: "fixed", top: 450, left: 15 }} onClick={() => zoomOut()}>-</button>
+          <button type="button" style={{ position: "fixed", top: 500, left: 15 }} onClick={() => resetScale()}>reset scale</button>
 
-        <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setText("")}>reset text</button>
+          <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setText("")}>reset text</button>
+        </div>
       </div>
-    </div>
+      <div className="inputs">
+        <div className="inputs-container">
+          <input type="number" placeholder="width" onChange={(e) => setWidth(e.target.value)} />
+          <input type="number" placeholder="height" onChange={(e) => setHeight(e.target.value)} />
+          <button onClick={handleSizeSubmit}>confirm</button>
+        </div>
+      </div>
+    </>
   );
 };
 
