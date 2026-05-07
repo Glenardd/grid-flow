@@ -15,19 +15,27 @@ function App() {
   const containerRef = useRef(null);
   const uiLayerRef = useRef<Konva.Layer | null>(null);
   const textref = useRef<Konva.Text | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // for layer checking purposes only
+  const textRefs = useRef({});
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
   const [canvasSize, setCanvasSize] = useState<{ width: number, height: number }>({ width: canvasWidth, height: canvasHeight });
   const [bgColor, setBgColor] = useState('');
   const colors = ['white', 'red', 'green', 'blue'];
-  const [textPosition, setTextPosition] = useState<{ x: number, y: number }>({
-    x: 0.5,   // start centered in pixels
-    y: 0.5,
-  });
+  const [textPosition, setTextPosition] = useState<{ x: number, y: number }>({ x: 0.5, y: 0.5, });
   const [text, setText] = useState<string | undefined>("");
   const [editMode, setEditMode] = useState(false);
   const [scale, setScale] = useState(1);
+
+  // for text layer check
+  const [texts, setTexts] = useState([
+    { id: '1', text: 'Layer 1 objects', x: 0.5, y: 0.5, layerId: 'layer1' },
+    { id: '2', text: 'Layer 2 objects', x: 0.2, y: 0.2, layerId: 'layer2' },
+  ]);
 
   // initial canvas
   const setupCanvas = () => {
@@ -36,6 +44,20 @@ function App() {
 
     const canvas = stage.container();
     canvas.style.background = bgColor === "" ? "white" : bgColor;
+  };
+
+  // for layer testing
+  // current layer test
+  const handleLayerClick = (e: KonvaEventObject<MouseEvent> ) => {
+    const target = e.target;
+    const layer = target.getLayer()
+
+    console.log("Layer: ", layer);
+    setEditMode(true);
+
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   // text position set
@@ -114,11 +136,10 @@ function App() {
   useEffect(() => {
     const stage = canvasRef.current;
     stage.on("contextmenu", handlerRightClick); // rightClicking
-    stage.on("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e)); // left clicking 
 
     //clean
     return () => {
-      stage.off("contextmenu", handlerLeftClick);
+      stage.off("contextmenu", handlerRightClick);
       stage.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
     };
   }, []);
@@ -129,13 +150,11 @@ function App() {
     y: textPosition.y * canvasSize.height,
   };
 
-  useEffect(() => {
-    if (!textref.current) return;
-    textref.current.on('click', () => setEditMode(true));
-    return () => {
-      textref.current?.off('click');
-    };
-  }, [textPosition]); // runs after textPosition is set and Text renders
+  // for layer testing debugging
+  // useEffect(() => {
+  //   console.log("selected id: ", selectedId);
+  //   console.log("editMode: ", editMode);
+  // }, [selectedId, editMode]);
 
   return (
     <>
@@ -147,8 +166,6 @@ function App() {
                 // for identifying transparent bg
                 bgColor === "" ? <Text x={0} y={0} text="transparent background" /> : ""
               }
-            </Layer>
-            <Layer>
               {/* canvas background color */}
               <Rect
                 x={0}
@@ -157,6 +174,43 @@ function App() {
                 height={canvasSize.height}
                 fill={bgColor || bgColor}
               />
+            </Layer>
+
+            {/* layer checking purposes */}
+            {['layer1', 'layer2'].map((layerId) => (
+              <Layer key={layerId} onClick={handleLayerClick}>
+                {
+                  texts.filter(t => t.layerId === layerId).map((t) => {
+                    const px = {
+                      x: t.x * canvasSize.width,
+                      y: t.y * canvasSize.height,
+                    };
+                    return (
+                      <Text
+                        key={t.id}
+                        ref={el => { textRefs.current[t.id] = el; }}
+                        x={px.x}
+                        y={px.y}
+                        text={t.text}
+                        fontSize={24}
+                        fill={selectedId === t.id ? "green" : "black"} // change color of text base on what layer is picked
+                        draggable={selectedId === t.id}
+                        onMouseEnter={() => { document.body.style.cursor = 'pointer'; }}
+                        onMouseLeave={() => { document.body.style.cursor = 'default'; }}
+                        onDragEnd={(e) => {
+                          setTexts(prev => prev.map(item =>
+                            item.id === t.id
+                              ? { ...item, x: e.target.x() / canvasSize.width, y: e.target.y() / canvasSize.height }
+                              : item
+                          ));
+                        }}
+                      />
+                    )
+                  })
+                }
+              </Layer>
+            ))}
+            <Layer>
               {/* Text */}
               <Text
                 ref={textref}
@@ -182,6 +236,7 @@ function App() {
                 editMode && (
                   <Html>
                     <input
+                      ref={inputRef}
                       style={{
                         position: "absolute",
                         top: `${pos.y || textref.current?.y()}px`,
@@ -219,6 +274,13 @@ function App() {
           <input type="number" placeholder="height" onChange={(e) => setHeight(e.target.value)} />
           <button onClick={handleSizeSubmit}>confirm</button>
         </div>
+      </div>
+      <div className="layers">
+        {
+          texts.map((layer) =>{
+            return (<h1 key={layer.id} style={{color:`${layer.id === selectedId ? "blue" : "black"}`}} onClick={() => {setSelectedId(layer.id)}}>{layer.layerId}</h1>)
+          })
+        }
       </div>
     </>
   );
