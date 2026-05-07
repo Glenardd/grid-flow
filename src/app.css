@@ -33,3 +33,9 @@
     display: flex;
     align-items: center;
 }
+
+.layers{
+    position: fixed;
+    right: 50px;
+    top: 15px;
+};
