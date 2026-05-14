@@ -26,15 +26,14 @@ function App() {
   const [canvasSize, setCanvasSize] = useState<{ width: number, height: number }>({ width: canvasWidth, height: canvasHeight });
   const [bgColor, setBgColor] = useState('');
   const colors = ['white', 'red', 'green', 'blue'];
-  const [textPosition, setTextPosition] = useState<{ x: number, y: number }>({ x: 0.5, y: 0.5, });
-  const [text, setText] = useState<string | undefined>("");
-  const [editMode, setEditMode] = useState(false);
+
   const [scale, setScale] = useState(1);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // for text layer check
   const [texts, setTexts] = useState([
-    { id: '1', text: 'Layer 1 objects', x: 0.5, y: 0.5, layerId: 'layer1' },
-    { id: '2', text: 'Layer 2 objects', x: 0.2, y: 0.2, layerId: 'layer2' },
+    { id: '1', text: 'Layer 1 objects', defaultText: "Layer 1 objects", x: 0.5, y: 0.5, layerId: 'layer1' },
+    { id: '2', text: 'Layer 2 objects', defaultText: "Layer 2 objects", x: 0.2, y: 0.2, layerId: 'layer2' },
   ]);
 
   // initial canvas
@@ -48,12 +47,8 @@ function App() {
 
   // for layer testing
   // current layer test
-  const handleLayerClick = (e: KonvaEventObject<MouseEvent>) => {
-    const target = e.target;
-    const layer = target.getLayer()
-
-    console.log("Layer: ", layer);
-    setEditMode(true);
+  const handleLayerClick = (id: string) => {
+    setEditingId(id);
 
     setTimeout(() => {
       inputRef.current?.focus();
@@ -70,13 +65,11 @@ function App() {
     // when text is clicked dont allow it to move around and cancel edit mode
     const clickedNode = e.target;
     if (clickedNode === textref.current) return;
-    setEditMode(false);
   };
 
   // prevents showing the context menu
   const handlerRightClick = (e: KonvaEventObject<PointerEvent>) => {
     e.evt.preventDefault();
-    setEditMode(false);
   };
 
   //zoom in
@@ -144,12 +137,6 @@ function App() {
     };
   }, []);
 
-  // pixel ratio pisutu
-  const pos = {
-    x: textPosition.x * canvasSize.width,
-    y: textPosition.y * canvasSize.height,
-  };
-
   // for layer testing debugging
   // useEffect(() => {
   //   console.log("selected id: ", selectedId);
@@ -160,7 +147,7 @@ function App() {
     <>
       <div>
         <div ref={containerRef} className="mainCanvas">
-          <Stage ref={canvasRef} width={canvasSize.width * scale} height={canvasSize.height * scale} scaleX={scale} scaleY={scale} >
+          <Stage ref={canvasRef} width={canvasSize.width * scale} height={canvasSize.height * scale} scaleX={scale} scaleY={scale}>
             {/* for background */}
             <Layer>
               <Rect
@@ -169,6 +156,7 @@ function App() {
                 width={canvasSize.width}
                 height={canvasSize.height}
                 fill={bgColor || bgColor}
+                listening={false}
               />
             </Layer>
             <Layer ref={uiLayerRef}>
@@ -180,77 +168,70 @@ function App() {
             </Layer>
             {/* layer checking purposes */}
             {['layer1', 'layer2'].map((layerId) => (
-              <Layer key={layerId} onClick={handleLayerClick}>
+              <Layer key={layerId}>
                 {
                   texts.filter(t => t.layerId === layerId).map((t) => {
                     const px = {
                       x: t.x * canvasSize.width,
                       y: t.y * canvasSize.height,
                     };
+
                     return (
-                      <Text
-                        key={t.id}
-                        ref={el => { textRefs.current[t.id] = el; }}
-                        x={px.x}
-                        y={px.y}
-                        text={t.text}
-                        fontSize={24}
-                        fill={selectedId === t.id ? "green" : "black"} // change color of text base on what layer is picked
-                        draggable={selectedId === t.id}
-                        onMouseEnter={() => { document.body.style.cursor = 'pointer'; }}
-                        onMouseLeave={() => { document.body.style.cursor = 'default'; }}
-                        onDragEnd={(e) => {
-                          setTexts(prev => prev.map(item =>
-                            item.id === t.id
-                              ? { ...item, x: e.target.x() / canvasSize.width, y: e.target.y() / canvasSize.height }
-                              : item
-                          ));
-                        }}
-                      />
+                      <>
+                        <Text
+                          key={t.id}
+                          ref={el => { textRefs.current[t.id] = el; }}
+                          x={px.x}
+                          y={px.y}
+                          text={t.text}
+                          fontSize={24}
+                          fill={selectedId === t.id ? "green" : "black"} // change color of text base on what layer is picked
+                          draggable={selectedId === t.id}
+                          onClick={() => {
+                            selectedId === t.id ? console.log('x: ', t.x, ' ', 'y: ', t.y) : "";
+                            if (selectedId === t.id) handleLayerClick(t.id); // this allows only selected layer to be clicked or edited
+                          }}
+                          onMouseEnter={() => { document.body.style.cursor = 'pointer'; }}
+                          onMouseLeave={() => { document.body.style.cursor = 'default'; }}
+                          onDragEnd={(e) => {
+                            setTexts(prev => prev.map(item =>
+                              item.id === t.id
+                                ? { ...item, x: e.target.x() / canvasSize.width, y: e.target.y() / canvasSize.height }
+                                : item
+                            ));
+                          }}
+                        />
+                        {// editing text
+                          editingId === t.id && (
+                            <Html>
+                              <input
+                                ref={inputRef}
+                                style={{
+                                  position: "absolute",
+                                  top: `${px.y}px`,
+                                  left: `${px.x}px`,
+                                  fontSize: `${24}px`,
+                                }}
+                                onBlur={() => setEditingId(null)} // exit edit mode when input loses focus
+                                onChange={(e) => {
+                                  setTexts(prev =>
+                                    prev.map(item =>
+                                      item.id === t.id
+                                        ? { ...item, text: e.target.value }
+                                        : item
+                                    )
+                                  );
+                                }} // update text state on input change
+                                value={t.text} // set input value to current text state
+                              />
+                            </Html>)
+                        }
+                      </>
                     )
                   })
                 }
               </Layer>
             ))}
-            <Layer>
-              {/* Text */}
-              <Text
-                ref={textref}
-                x={pos.x}
-                y={pos.y}
-                align="center"
-                verticalAlign="middle"
-                fontFamily="Calibri"
-                fontSize={24}
-                text={text || "hello world"}
-                fill="black"
-                draggable // enable draggable object
-                onMouseEnter={() => { document.body.style.cursor = 'pointer'; }}
-                onMouseLeave={() => { document.body.style.cursor = 'default'; }}
-                onDragEnd={(e: KonvaEventObject<DragEvent>) => {
-                  setTextPosition({
-                    x: e.target.x() / canvasSize.width,
-                    y: e.target.y() / canvasSize.height,
-                  });
-                }}
-              />
-              {// editing text
-                editMode && (
-                  <Html>
-                    <input
-                      ref={inputRef}
-                      style={{
-                        position: "absolute",
-                        top: `${pos.y || textref.current?.y()}px`,
-                        left: `${pos.x || textref.current?.x()}px`,
-                        fontSize: `${24}px`,
-                      }}
-                      onBlur={() => setEditMode(false)} // exit edit mode when input loses focus
-                      onChange={(e) => setText(e.target.value)} // update text state on input change
-                      value={text || "hello world"} // set input value to current text state
-                    />
-                  </Html>)}
-            </Layer>
           </Stage>
         </div>
         <div className="color-selection">
@@ -267,7 +248,7 @@ function App() {
           <button type="button" style={{ position: "fixed", top: 450, left: 15 }} onClick={() => zoomOut()}>-</button>
           <button type="button" style={{ position: "fixed", top: 500, left: 15 }} onClick={() => resetScale()}>reset scale</button>
 
-          <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setText("")}>reset text</button>
+          <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setTexts(prev => prev.map(item => ({ ...item, text: item.defaultText })))}>reset text</button>
         </div>
       </div>
       <div className="inputs">
