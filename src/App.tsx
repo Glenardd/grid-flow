@@ -48,7 +48,7 @@ function App() {
 
   // for layer testing
   // current layer test
-  const handleLayerClick = (e: KonvaEventObject<MouseEvent> ) => {
+  const handleLayerClick = (e: KonvaEventObject<MouseEvent>) => {
     const target = e.target;
     const layer = target.getLayer()
 
@@ -161,12 +161,8 @@ function App() {
       <div>
         <div ref={containerRef} className="mainCanvas">
           <Stage ref={canvasRef} width={canvasSize.width * scale} height={canvasSize.height * scale} scaleX={scale} scaleY={scale} >
-            <Layer ref={uiLayerRef}>
-              {
-                // for identifying transparent bg
-                bgColor === "" ? <Text x={0} y={0} text="transparent background" /> : ""
-              }
-              {/* canvas background color */}
+            {/* for background */}
+            <Layer>
               <Rect
                 x={0}
                 y={0}
@@ -175,7 +171,13 @@ function App() {
                 fill={bgColor || bgColor}
               />
             </Layer>
-
+            <Layer ref={uiLayerRef}>
+              {
+                // for identifying transparent bg
+                bgColor === "" ? <Text x={0} y={0} text="transparent background" /> : ""
+              }
+              {/* canvas background color */}
+            </Layer>
             {/* layer checking purposes */}
             {['layer1', 'layer2'].map((layerId) => (
               <Layer key={layerId} onClick={handleLayerClick}>
@@ -277,8 +279,8 @@ function App() {
       </div>
       <div className="layers">
         {
-          texts.map((layer) =>{
-            return (<h1 key={layer.id} style={{color:`${layer.id === selectedId ? "blue" : "black"}`}} onClick={() => {setSelectedId(layer.id)}}>{layer.layerId}</h1>)
+          texts.map((layer) => {
+            return (<h1 key={layer.id} style={{ color: `${layer.id === selectedId ? "blue" : "black"}` }} onClick={() => { setSelectedId(layer.id) }}>{layer.layerId}</h1>)
           })
         }
       </div>
