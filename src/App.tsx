@@ -18,8 +18,8 @@ function App() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // for layer checking purposes only
-  const textRefs = useRef({});
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const textRefs = useRef<Record<string, Konva.Text | null>>({});
+  const [selectedId, setSelectedId] = useState<string | null>("1");
 
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
@@ -128,12 +128,12 @@ function App() {
   // event clicks
   useEffect(() => {
     const stage = canvasRef.current;
-    stage.on("contextmenu", handlerRightClick); // rightClicking
+    stage?.on("contextmenu", handlerRightClick); // rightClicking
 
     //clean
     return () => {
-      stage.off("contextmenu", handlerRightClick);
-      stage.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
+      stage?.off("contextmenu", handlerRightClick);
+      stage?.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
     };
   }, []);
 
