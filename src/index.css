@@ -1,5 +1,13 @@
-body{
+body {
     margin: 0;
-    padding:0;
+    padding: 0;
     background-color: grey;
+}
+
+.mainCanvas {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
 }
