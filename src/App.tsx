@@ -27,7 +27,12 @@ function App() {
   const [bgColor, setBgColor] = useState('');
   const colors = ['white', 'red', 'green', 'blue'];
 
-  const [scale, setScale] = useState(1);
+  const [viewport, setViewport] = useState({
+    x: (window.innerWidth - canvasWidth) / 2,
+    y: (window.innerHeight - canvasHeight) / 2,
+    scale: 1,
+  });
+
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // for text layer check
@@ -42,7 +47,8 @@ function App() {
     if (!stage) return;
 
     const canvas = stage.container();
-    canvas.style.background = bgColor === "" ? "white" : bgColor;
+    // canvas.style.background = bgColor === "" ? "white" : bgColor;
+    canvas.style.background = "transparent";
   };
 
   // for layer testing
@@ -72,34 +78,67 @@ function App() {
     e.evt.preventDefault();
   };
 
-  //zoom in
+  //zoom in, not optimized yet it should zoom in to the position of the mouse cursor, currently it just zooms in to the center of the canvas
   const zoomIn = () => {
-    setScale(prev => Math.min(prev * 1.05, 3));
+    setViewport(prev => ({
+      ...prev,
+      scale: Math.min(prev.scale * 1.05, 3)
+    }));
   };
 
+  // zoom in, not optimized yet it should zoom out from the position of the mouse cursor, currently it just zooms out from the center of the canvas
   const zoomOut = () => {
-    setScale(prev => Math.max(prev * 0.95, 0.5));
+    setViewport(prev => ({
+      ...prev,
+      scale: Math.max(prev.scale * 0.95, 0.5)
+    }));
   };
 
+  // not optimized yet, it should scale responsive to the current scale and position, currently it just resets to scale 1 and position to center
   const resetScale = () => {
-    setScale(1);
+    setViewport(prev => ({
+      ...prev,
+      scale: 1
+    }));
   };
 
+  // resets canvas position to center not optimized yet
+  // this should reset position responsive to the scaled canvas size, so it will always reset to the center of the screen regardless of the current scale
+  const resetPosition = () => {
+    setViewport(prev => ({
+      ...prev,
+      x: (window.innerWidth - canvasSize.width) / 2,
+      y: (window.innerHeight - canvasSize.height) / 2,
+    }));
+  };
+
+  // save image, saves the canvas and avoids the transparent layer of the canvas
   const saveToJpeg = () => {
     const stage = canvasRef.current;
     if (!stage) return;
 
-    // hide the transparent layer visual
     uiLayerRef.current?.hide();
 
-    const pngUrl = stage?.toDataURL({
+    // get bg rect from first layer
+    const bgCanvas = stage.getLayers()[0].getChildren()[0] as Konva.Rect;
+    const wasTransparent = bgColor === "";
+
+    // if transparent, set to transparent for export
+    if (wasTransparent) bgCanvas.fill("transparent");
+
+    const pngUrl = stage.toDataURL({
       mimeType: "image/png",
-      pixelRatio: 2
+      pixelRatio: 2,
+      x: viewport.x * viewport.scale,
+      y: viewport.y * viewport.scale,
+      width: canvasSize.width * viewport.scale,
+      height: canvasSize.height * viewport.scale,
     });
 
+    // restore white display after export
+    if (wasTransparent) bgCanvas.fill("white");
     uiLayerRef.current?.show();
 
-    // creates a donwload link element
     const link = document.createElement('a');
     link.download = "canvas.png";
     link.href = pngUrl || "";
@@ -137,6 +176,10 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    console.log("viewport: ", viewport);
+  }, [viewport]);
+
   // for layer testing debugging
   // useEffect(() => {
   //   console.log("selected id: ", selectedId);
@@ -147,16 +190,23 @@ function App() {
     <>
       <div>
         <div ref={containerRef} className="mainCanvas">
-          <Stage ref={canvasRef} width={canvasSize.width * scale} height={canvasSize.height * scale} scaleX={scale} scaleY={scale}>
+          <Stage
+            ref={canvasRef}
+            width={window.innerWidth}
+            height={window.innerHeight}
+            scaleX={viewport.scale}
+            scaleY={viewport.scale}
+          >
             {/* for background */}
             <Layer>
               <Rect
-                x={0}
-                y={0}
+                x={viewport.x}
+                y={viewport.y}
                 width={canvasSize.width}
                 height={canvasSize.height}
-                fill={bgColor || bgColor}
-                listening={false}
+                fill={bgColor || "white"}
+                listening={true}
+                draggable
               />
             </Layer>
             <Layer ref={uiLayerRef}>
@@ -166,9 +216,26 @@ function App() {
               }
               {/* canvas background color */}
             </Layer>
+            {/* panning layer */}
+            <Layer>
+              <Rect
+                x={viewport.x}
+                y={viewport.y}
+                width={canvasSize.width}
+                height={canvasSize.height}
+                fill="transparent"
+                draggable
+                onDragMove={(e) => {
+                  setViewport(prev => ({ ...prev, x: e.target.x(), y: e.target.y() }));
+                }}
+                onDragEnd={(e) => {
+                  setViewport(prev => ({ ...prev, x: e.target.x(), y: e.target.y() }));
+                }}
+              />
+            </Layer>
             {/* layer checking purposes */}
             {['layer1', 'layer2'].map((layerId) => (
-              <Layer key={layerId}>
+              <Layer key={layerId} x={viewport.x} y={viewport.y}>
                 {
                   texts.filter(t => t.layerId === layerId).map((t) => {
                     const px = {
@@ -247,6 +314,7 @@ function App() {
           <button type="button" style={{ position: "fixed", top: 400, left: 15 }} onClick={() => zoomIn()}>+</button>
           <button type="button" style={{ position: "fixed", top: 450, left: 15 }} onClick={() => zoomOut()}>-</button>
           <button type="button" style={{ position: "fixed", top: 500, left: 15 }} onClick={() => resetScale()}>reset scale</button>
+          <button type="button" style={{ position: "fixed", top: 550, left: 15 }} onClick={() => resetPosition()}>reset position</button>
 
           <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setTexts(prev => prev.map(item => ({ ...item, text: item.defaultText })))}>reset text</button>
         </div>
