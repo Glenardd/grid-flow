@@ -41,6 +41,12 @@ function App() {
     { id: '2', text: 'Layer 2 objects', defaultText: "Layer 2 objects", x: 0.2, y: 0.2, layerId: 'layer2' },
   ]);
 
+  // temporary text when canvas is clicked it will show depends on the mouse position
+  const [tempTexts, setTemptexts] = useState([
+    { id: '1', text: 'Hello', x: 100, y: 100 }
+  ]);
+
+
   // initial canvas
   const setupCanvas = () => {
     const stage = canvasRef.current;
@@ -71,11 +77,6 @@ function App() {
     // when text is clicked dont allow it to move around and cancel edit mode
     const clickedNode = e.target;
     if (clickedNode === textref.current) return;
-  };
-
-  // prevents showing the context menu
-  const handlerRightClick = (e: KonvaEventObject<PointerEvent>) => {
-    e.evt.preventDefault();
   };
 
   //zoom in, not optimized yet it should zoom in to the position of the mouse cursor, currently it just zooms in to the center of the canvas
@@ -164,27 +165,23 @@ function App() {
     setupCanvas();
   }, [bgColor]);
 
-  // event clicks
-  useEffect(() => {
-    const stage = canvasRef.current;
-    stage?.on("contextmenu", handlerRightClick); // rightClicking
-
-    //clean
-    return () => {
-      stage?.off("contextmenu", handlerRightClick);
-      stage?.off("click", (e: KonvaEventObject<PointerEvent>) => e.evt.button === 0 && handlerLeftClick(e));
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("viewport: ", viewport);
-  }, [viewport]);
+  // for testing viewport changes when panning and zooming
+  // useEffect(() => {
+  //   console.log("viewport: ", viewport);
+  // }, [viewport]);
 
   // for layer testing debugging
   // useEffect(() => {
   //   console.log("selected id: ", selectedId);
   //   console.log("editMode: ", editMode);
   // }, [selectedId, editMode]);
+
+  useEffect(() => {
+    const stage = canvasRef.current;
+    const pos = stage?.getPointerPosition();
+
+    console.log("mouse position: ", pos);
+  }, [canvasRef]);
 
   return (
     <>
@@ -197,7 +194,7 @@ function App() {
             scaleX={viewport.scale}
             scaleY={viewport.scale}
           >
-            {/* for background */}
+            {/* color of the canvas only */}
             <Layer>
               <Rect
                 x={viewport.x}
@@ -216,7 +213,7 @@ function App() {
               }
               {/* canvas background color */}
             </Layer>
-            {/* panning layer */}
+            {/* panning layer or the front layer canvas*/}
             <Layer>
               <Rect
                 x={viewport.x}
@@ -225,11 +222,28 @@ function App() {
                 height={canvasSize.height}
                 fill="transparent"
                 draggable
+                onclick={(e: KonvaEventObject<PointerEvent>) => {
+                  // for testing mouse position on canvas click
+                  const stage = e.target.getStage();
+                  const pos = stage?.getPointerPosition();
+
+                  if (!pos) return
+
+                  const canvasX = (pos.x - viewport.x) / viewport.scale;
+                  const canvasY = (pos.y - viewport.y) / viewport.scale;
+
+                  console.log(canvasX, canvasY);
+                }}
                 onDragMove={(e) => {
                   setViewport(prev => ({ ...prev, x: e.target.x(), y: e.target.y() }));
                 }}
                 onDragEnd={(e) => {
                   setViewport(prev => ({ ...prev, x: e.target.x(), y: e.target.y() }));
+                }}
+                // prevents showing the context menu when right clicking on the canvas
+                onContextMenu={(e) => {
+                  e.evt.preventDefault();
+                  console.log("right click canvas");
                 }}
               />
             </Layer>
