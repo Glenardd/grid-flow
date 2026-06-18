@@ -22,6 +22,7 @@ function App() {
 
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
+  const [isTextToolActive, setIsTextToolActive] = useState(false);
   const [canvasSize, setCanvasSize] = useState<{ width: number, height: number }>({ width: canvasWidth, height: canvasHeight });
   const [bgColor, setBgColor] = useState('');
   const colors = ['white', 'red', 'green', 'blue'];
@@ -218,6 +219,7 @@ function App() {
                   console.log(canvasX, canvasY);
 
                   // when canvas is clicked, it will add a temporary text at the mouse position, this is for testing purposes only
+                  if(!isTextToolActive) return; // only add text when text tool is active
                   setTexts(prev => [...prev,
                   {
                     id: `${prev.length + 1}`,
@@ -325,6 +327,7 @@ function App() {
           <button type="button" style={{ position: "fixed", top: 550, left: 15 }} onClick={() => resetPosition()}>reset position</button>
 
           <button type="button" style={{ position: "fixed", top: 350, left: 15 }} onClick={() => setTexts(prev => prev.map(item => ({ ...item, text: item.defaultText })))}>reset text</button>
+          <button type="button" style={{ position: "fixed", top: 600, left: 15, backgroundColor: isTextToolActive ? "red" : "white" }} onClick={() => setIsTextToolActive(!isTextToolActive)}>text tool</button>
         </div>
       </div>
       <div className="inputs">
