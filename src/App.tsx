@@ -14,7 +14,6 @@ function App() {
   const canvasRef = useRef<Konva.Stage | null>(null);
   const containerRef = useRef(null);
   const uiLayerRef = useRef<Konva.Layer | null>(null);
-  const textref = useRef<Konva.Text | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // for layer checking purposes only
@@ -41,12 +40,6 @@ function App() {
     { id: '2', text: 'Layer 2 objects', defaultText: "Layer 2 objects", x: 0.2, y: 0.2, layerId: 'layer2' },
   ]);
 
-  // temporary text when canvas is clicked it will show depends on the mouse position
-  const [tempTexts, setTemptexts] = useState([
-    { id: '1', text: 'Hello', x: 100, y: 100 }
-  ]);
-
-
   // initial canvas
   const setupCanvas = () => {
     const stage = canvasRef.current;
@@ -57,26 +50,14 @@ function App() {
     canvas.style.background = "transparent";
   };
 
-  // for layer testing
-  // current layer test
+  // this will focus the input when the layer is 
+  // clicked and set the editing id to the selected layer id, this allows only the selected layer to be edited
   const handleLayerClick = (id: string) => {
     setEditingId(id);
 
     setTimeout(() => {
       inputRef.current?.focus();
     }, 0);
-  };
-
-  // text position set
-  const handlerLeftClick = (e: KonvaEventObject<PointerEvent>) => {
-    e.evt.preventDefault();
-
-    const stage = canvasRef.current;
-    if (!stage) return;
-
-    // when text is clicked dont allow it to move around and cancel edit mode
-    const clickedNode = e.target;
-    if (clickedNode === textref.current) return;
   };
 
   //zoom in, not optimized yet it should zoom in to the position of the mouse cursor, currently it just zooms in to the center of the canvas
@@ -224,6 +205,8 @@ function App() {
                 draggable
                 onclick={(e: KonvaEventObject<PointerEvent>) => {
                   // for testing mouse position on canvas click
+                  if (e.evt.button === 2) return; // ignore right click when checking mouse position
+
                   const stage = e.target.getStage();
                   const pos = stage?.getPointerPosition();
 
@@ -233,6 +216,17 @@ function App() {
                   const canvasY = (pos.y - viewport.y) / viewport.scale;
 
                   console.log(canvasX, canvasY);
+
+                  // when canvas is clicked, it will add a temporary text at the mouse position, this is for testing purposes only
+                  setTexts(prev => [...prev,
+                  {
+                    id: `${prev.length + 1}`,
+                    text: `Hello ${prev.length + 1}`, 
+                    defaultText: `Hello ${prev.length + 1}`, 
+                    x: canvasX / canvasSize.width, 
+                    y: canvasY / canvasSize.height, 
+                    layerId: prev.length > 0 ? `layer${prev.length + 1}` : 'layer1'
+                  }]);
                 }}
                 onDragMove={(e) => {
                   setViewport(prev => ({ ...prev, x: e.target.x(), y: e.target.y() }));
@@ -248,7 +242,7 @@ function App() {
               />
             </Layer>
             {/* layer checking purposes */}
-            {['layer1', 'layer2'].map((layerId) => (
+            {texts.map((text) => text.layerId).map((layerId) => (
               <Layer key={layerId} x={viewport.x} y={viewport.y}>
                 {
                   texts.filter(t => t.layerId === layerId).map((t) => {
