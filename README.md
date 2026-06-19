@@ -1,7 +1,7 @@
 # 🎨 Grid Flow
 A dedicated web application for image editing and layout design.
 
-## 🚀 Current Status: Sprint 2
+## 🚀 Current Status: Sprint 3
 **Status:** Completed ✅  
 **Goal:** A canvas with interactive capabilities, including zooming, object manipulation, responsive canvas sizing, and text styling customization.
 
@@ -12,9 +12,9 @@ A dedicated web application for image editing and layout design.
 - **State Management:** React Hooks (`useState` / `useRef`)
 
 ## 📦 Features Built
-- [x] **Canvas Scaling (Zoom):** Basic zoom in/out functionality implemented.
-- [x] **Drag & Drop:** Interactive repositioning of canvas objects.
-- [x] **Canvas Resizing:** Dynamic width/height input for custom canvas sizing.
+- [x] **Adding text in canvas:** Basic adding of text functionality implemented.
+- [x] **Layer organization:** each element can be assigned on two or more layers.
+- [x] **Image Insertion:** Users can upload and place images onto the canvas.
 - [x] **Basic Object Responsiveness:** Object position is responsive as the canvas resizes.
 
 ## 🛠 Setup & Development
