@@ -4,6 +4,15 @@ import "./app.css";
 import Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 import { Html } from 'react-konva-utils';
+import { Image } from "react-konva";
+
+type CanvasImage = {
+  image: HTMLImageElement;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 function App() {
 
@@ -19,6 +28,7 @@ function App() {
   // for layer checking purposes only
   const textRefs = useRef<Record<string, Konva.Text | null>>({});
   const [selectedId, setSelectedId] = useState<string | null>("1");
+  const [image, setImage] = useState<CanvasImage[]>([{ image: new window.Image(), x: 0, y: 0, width: 100, height: 100 }]);
 
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
@@ -93,6 +103,21 @@ function App() {
       x: (window.innerWidth - canvasSize.width) / 2,
       y: (window.innerHeight - canvasSize.height) / 2,
     }));
+  };
+
+  // image upload function
+  const imageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const img = new window.Image();
+    img.src = URL.createObjectURL(file);
+
+    console.log("image name: ", file.name, "image info: ", img);
+
+    img.onload = () => {
+      setImage(prev => [...prev, { image: img, x: 100, y: 100, width: 100, height: 100 }]);
+    };
   };
 
   // save image, saves the canvas and avoids the transparent layer of the canvas
@@ -219,14 +244,14 @@ function App() {
                   console.log(canvasX, canvasY);
 
                   // when canvas is clicked, it will add a temporary text at the mouse position, this is for testing purposes only
-                  if(!isTextToolActive) return; // only add text when text tool is active
+                  if (!isTextToolActive) return; // only add text when text tool is active
                   setTexts(prev => [...prev,
                   {
                     id: `${prev.length + 1}`,
-                    text: `Hello ${prev.length + 1}`, 
-                    defaultText: `Hello ${prev.length + 1}`, 
-                    x: canvasX / canvasSize.width, 
-                    y: canvasY / canvasSize.height, 
+                    text: `Hello ${prev.length + 1}`,
+                    defaultText: `Hello ${prev.length + 1}`,
+                    x: canvasX / canvasSize.width,
+                    y: canvasY / canvasSize.height,
                     layerId: prev.length > 0 ? `layer${prev.length + 1}` : 'layer1'
                   }]);
                 }}
@@ -242,6 +267,19 @@ function App() {
                   console.log("right click canvas");
                 }}
               />
+            </Layer>
+            {/* for displaying uploaded images */}
+            <Layer x={viewport.x} y={viewport.y}>
+              {image.map((img) => (
+
+                <Image
+                  x={img.x}
+                  y={img.y}
+                  width={img.width}
+                  height={img.height}
+                  image={img.image}
+                />
+              ))}
             </Layer>
             {/* layer checking purposes */}
             {texts.map((text) => text.layerId).map((layerId) => (
@@ -316,6 +354,7 @@ function App() {
             // basic color selection
             return (<div key={index} className="palettes" style={{ backgroundColor: `${color}` }} onClick={() => setBgColor(color)} />)
           })}
+          <input style={{ position: "fixed", top: 15, left: 100 }} type="file" accept="image/*" onChange={imageUpload} placeholder="upload image here" />
         </div>
         <div>
           <button type="button" style={{ position: "fixed", top: 250, left: 15 }} onClick={() => saveToJpeg()}>export to png</button>
